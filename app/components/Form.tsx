@@ -1,9 +1,9 @@
 "use client";
-import { signUp } from "@/lib/actions";
 import { RotateCwIcon } from "lucide-react";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect } from "react";
+import { FormEvent, useState } from "react";
 import toast from "react-hot-toast";
 
 interface Props {
@@ -11,25 +11,53 @@ interface Props {
 }
 
 const Form = ({ type }: Props) => {
+	const [isLoading, setIsLoading] = useState(false);
 	const router = useRouter();
-	const [formState, formAction, isPending] = useActionState(signUp, {
-		message: "",
-		success: false,
-	});
-
-	useEffect(() => {
-		if (formState?.success) {
-			toast.success(`${formState.message} redirecting to login`);
-			router.push("/login");
-		} else if (formState.message === "Something went wrong") {
-			toast.error(formState.message);
+	const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		if (type === "register") {
+			setIsLoading(true);
+			const res = await fetch("/api/auth/register", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					email: e.currentTarget.email.value,
+					password: e.currentTarget.password.value,
+				}),
+			});
+			if (res.ok) {
+				toast.success("user created successfully redirecting to");
+				setIsLoading(false);
+				setTimeout(() => {
+					router.push("/login");
+				}, 2000);
+			} else {
+				const { error } = await res.json();
+				setIsLoading(false);
+				toast.error(error);
+			}
+		} else {
+			setIsLoading(true);
+			const res = await signIn("credentials", {
+				email: e.currentTarget.email.value,
+				password: e.currentTarget.password.value,
+				redirect: false,
+			});
+			if (res?.ok) {
+				setIsLoading(false);
+				router.push("/protected");
+			} else {
+				const error = res?.error;
+				toast.error(error!);
+			}
 		}
-	}, [formState?.success, formState.message]);
-
+	};
 	return (
 		<form
 			className="flex flex-col space-y-4 bg-gray-50 px-4 py-8 sm:px-16"
-			action={formAction}
+			onSubmit={handleFormSubmit}
 		>
 			<div>
 				<label
@@ -64,10 +92,10 @@ const Form = ({ type }: Props) => {
 			</div>
 			<button
 				className="flex h-10 w-full items-center justify-center rounded-md border text-sm transition-all focus:outline-none border-black bg-black text-white hover:bg-gray-900"
-				disabled={isPending}
+				disabled={isLoading}
 			>
-				{isPending ? (
-					<RotateCwIcon />
+				{isLoading ? (
+					<RotateCwIcon className="animate-spin" />
 				) : (
 					<span>{type === "login" ? "Login" : "Register"}</span>
 				)}
@@ -88,13 +116,6 @@ const Form = ({ type }: Props) => {
 					</Link>{" "}
 					instead
 				</p>
-			)}
-			{formState?.success && (
-				<>
-					<p className="text-green-500">
-						{formState.message} redirecting to login
-					</p>
-				</>
 			)}
 		</form>
 	);

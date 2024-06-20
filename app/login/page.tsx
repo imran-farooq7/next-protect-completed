@@ -14,8 +14,8 @@ const LoginPage = () => {
 					<p className="text-sm text-gray-500">
 						Sign in with your email and password
 					</p>
-					<Form type="login" />
 				</div>
+				<Form type="login" />
 			</div>
 		</div>
 	);

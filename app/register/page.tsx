@@ -14,8 +14,8 @@ const RegisterPage = () => {
 					<p className="text-sm text-gray-500">
 						Create an account with your email and password
 					</p>
-					<Form type="register" />
 				</div>
+				<Form type="register" />
 			</div>
 		</div>
 	);
